@@ -1,9 +1,88 @@
 {% extends "base.html" %}
 {% block content %}
-  <main class="container">
-    <h1>{{ title }}</h1>
-    <p>FastAPI app is running. Edit templates in <code>app/templates</code> and assets in <code>app/static</code>.</p>
-  </main>
+<div class="container">
+  <header class="header">
+    <h1>PubMed Knowledge Graph</h1>
+    <p>Generate knowledge graphs showing direct references and citations of PubMed articles</p>
+  </header>
+
+  <!-- PMID Input Section -->
+  <section class="input-section">
+    <div class="input-container">
+      <h2>Enter PubMed ID (PMID)</h2>
+      <form id="pmidForm" class="pmid-form">
+        <div class="input-group">
+          <input 
+            type="text" 
+            id="pmidInput" 
+            name="pmid" 
+            placeholder="e.g., 32284615" 
+            pattern="[0-9]+" 
+            required
+            class="pmid-input"
+          >
+          <button type="submit" class="submit-btn">Generate Graph</button>
+        </div>
+      </form>
+      <p class="input-description">
+        This will create a graph showing:
+        <br>• <strong>References:</strong> Articles that your paper cites (outgoing arrows)
+        <br>• <strong>Citations:</strong> Articles that cite your paper (incoming arrows)
+      </p>
+    </div>
+  </section>
+
+  <!-- Loading Section -->
+  <section id="loadingSection" class="loading-section hidden">
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <h3>Building Knowledge Graph...</h3>
+      <p id="loadingStatus">Initializing...</p>
+      <div class="progress-bar">
+        <div id="progressFill" class="progress-fill"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Graph Visualization Section -->
+  <section id="graphSection" class="graph-section hidden">
+    <div class="graph-header">
+      <h2>Knowledge Graph</h2>
+      <div class="graph-controls">
+        <button id="resetView" class="control-btn">Reset View</button>
+        <button id="exportGraph" class="control-btn">Export Data</button>
+      </div>
+    </div>
+    
+    <div class="graph-container">
+      <div id="graphVisualization" class="graph-visualization"></div>
+      
+      <!-- Article Details Sidebar -->
+      <div id="articleDetails" class="article-details hidden">
+        <div class="details-header">
+          <h3>Article Details</h3>
+          <button id="closeDetails" class="close-btn">&times;</button>
+        </div>
+        <div id="detailsContent" class="details-content">
+          <!-- Article details will be populated here -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Error Section -->
+  <section id="errorSection" class="error-section hidden">
+    <div class="error-container">
+      <h3>Error</h3>
+      <p id="errorMessage"></p>
+      <button onclick="hideError()" class="error-btn">Try Again</button>
+    </div>
+  </section>
+</div>
+
+<!-- D3.js for graph visualization -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="/static/js/graph.js"></script>
 {% endblock %}
 
 
