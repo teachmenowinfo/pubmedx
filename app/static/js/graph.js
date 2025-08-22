@@ -19,12 +19,19 @@ const detailsContent = document.getElementById('detailsContent');
 const closeDetails = document.getElementById('closeDetails');
 const resetView = document.getElementById('resetView');
 const exportGraph = document.getElementById('exportGraph');
+const analyticsBtn = document.getElementById('analyticsBtn');
+const analyticsSection = document.getElementById('analyticsSection');
+const closeAnalyticsBtn = document.getElementById('closeAnalyticsBtn');
+const analyticsLoading = document.getElementById('analyticsLoading');
+const analyticsData = document.getElementById('analyticsData');
 
 // Event listeners
 pmidForm.addEventListener('submit', handleFormSubmit);
 closeDetails.addEventListener('click', hideArticleDetails);
 resetView.addEventListener('click', resetGraphView);
 exportGraph.addEventListener('click', exportGraphData);
+analyticsBtn.addEventListener('click', showAnalytics);
+closeAnalyticsBtn.addEventListener('click', hideAnalytics);
 
 // Form submission handler
 async function handleFormSubmit(event) {
@@ -366,4 +373,204 @@ window.addEventListener('resize', () => {
   if (graphData) {
     renderGraph();
   }
-}); 
+});
+
+// Analytics functions
+async function showAnalytics() {
+  if (!currentGraphId) return;
+  
+  analyticsSection.classList.remove('hidden');
+  analyticsLoading.style.display = 'block';
+  analyticsData.style.display = 'none';
+  
+  try {
+    const response = await fetch(`/api/graph/${currentGraphId}/analytics`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    displayAnalytics(result.analytics);
+    
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    analyticsData.innerHTML = '<div class="error">Failed to load analytics. Please try again.</div>';
+    analyticsData.style.display = 'block';
+  } finally {
+    analyticsLoading.style.display = 'none';
+  }
+}
+
+function hideAnalytics() {
+  analyticsSection.classList.add('hidden');
+}
+
+function displayAnalytics(analytics) {
+  if (analytics.error) {
+    analyticsData.innerHTML = `<div class="error">${analytics.error}</div>`;
+    analyticsData.style.display = 'block';
+    return;
+  }
+  
+  let html = '';
+  
+  // Summary card
+  if (analytics.summary) {
+    html += createAnalyticsCard('Summary', analytics.summary);
+  }
+  
+  // Basic statistics
+  if (analytics.basic_statistics) {
+    html += createAnalyticsCard('Basic Statistics', analytics.basic_statistics);
+  }
+  
+  // Centrality measures
+  if (analytics.centrality_measures) {
+    html += createCentralityCard(analytics.centrality_measures);
+  }
+  
+  // Clustering analysis
+  if (analytics.clustering_analysis) {
+    html += createClusteringCard(analytics.clustering_analysis);
+  }
+  
+  // Research insights
+  if (analytics.research_insights) {
+    html += createInsightsCard(analytics.research_insights);
+  }
+  
+  analyticsData.innerHTML = html;
+  analyticsData.style.display = 'block';
+}
+
+function createAnalyticsCard(title, data) {
+  let html = `<div class="analytics-card">
+    <h3>${title}</h3>`;
+  
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === 'object' && value !== null) continue;
+    
+    const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const formattedValue = typeof value === 'number' ? value.toFixed(3) : value;
+    
+    html += `<div class="analytics-metric">
+      <span class="metric-label">${formattedKey}</span>
+      <span class="metric-value">${formattedValue}</span>
+    </div>`;
+  }
+  
+  html += '</div>';
+  return html;
+}
+
+function createCentralityCard(centralityData) {
+  let html = `<div class="analytics-card">
+    <h3>Centrality Measures</h3>`;
+  
+  for (const [measure, scores] of Object.entries(centralityData)) {
+    if (typeof scores !== 'object' || !scores) continue;
+    
+    const topNodes = Object.entries(scores)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5);
+    
+    if (topNodes.length > 0) {
+      const measureName = measure.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      html += `<h4>${measureName}</h4><ul class="insights-list">`;
+      
+      topNodes.forEach(([nodeId, score]) => {
+        html += `<li>
+          <span>PMID: ${nodeId}</span>
+          <span class="insight-score">${score.toFixed(4)}</span>
+        </li>`;
+      });
+      
+      html += '</ul>';
+    }
+  }
+  
+  html += '</div>';
+  return html;
+}
+
+function createClusteringCard(clusteringData) {
+  let html = `<div class="analytics-card">
+    <h3>Clustering Analysis</h3>`;
+  
+  if (clusteringData.global_clustering !== undefined) {
+    html += `<div class="analytics-metric">
+      <span class="metric-label">Global Clustering Coefficient</span>
+      <span class="metric-value">${clusteringData.global_clustering.toFixed(4)}</span>
+    </div>`;
+  }
+  
+  if (clusteringData.number_of_communities !== undefined) {
+    html += `<div class="analytics-card">
+      <h4>Research Communities</h4>
+      <div class="analytics-metric">
+        <span class="metric-label">Number of Communities</span>
+        <span class="metric-value">${clusteringData.number_of_communities}</span>
+      </div>`;
+    
+    if (clusteringData.community_sizes) {
+      const topCommunities = Object.entries(clusteringData.community_sizes)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3);
+      
+      html += '<ul class="insights-list">';
+      topCommunities.forEach(([communityId, size]) => {
+        html += `<li>
+          <span>Community ${communityId}</span>
+          <span class="insight-score">${size} articles</span>
+        </li>`;
+      });
+      html += '</ul>';
+    }
+    
+    html += '</div>';
+  }
+  
+  html += '</div>';
+  return html;
+}
+
+function createInsightsCard(insightsData) {
+  let html = `<div class="analytics-card">
+    <h3>Research Insights</h3>`;
+  
+  if (insightsData.top_influential_papers) {
+    html += `<h4>Top Influential Papers</h4><ul class="insights-list">`;
+    insightsData.top_influential_papers.forEach(([pmid, score]) => {
+      html += `<li>
+        <span>PMID: ${pmid}</span>
+        <span class="insight-score">${score.toFixed(4)}</span>
+      </li>`;
+    });
+    html += '</ul>';
+  }
+  
+  if (insightsData.bridge_papers) {
+    html += `<h4>Bridge Papers</h4><ul class="insights-list">`;
+    insightsData.bridge_papers.forEach(([pmid, score]) => {
+      html += `<li>
+        <span>PMID: ${pmid}</span>
+        <span class="insight-score">${score.toFixed(4)}</span>
+      </li>`;
+    });
+    html += '</ul>';
+  }
+  
+  if (insightsData.emerging_topics) {
+    html += `<h4>Emerging Topics</h4><ul class="insights-list">`;
+    insightsData.emerging_topics.forEach(([pmid, outDegree, inDegree]) => {
+      html += `<li>
+        <span>PMID: ${pmid}</span>
+        <span class="insight-score">${outDegree}→ ${inDegree}←</span>
+      </li>`;
+    });
+    html += '</ul>';
+  }
+  
+  html += '</div>';
+  return html;
+} 

@@ -51,6 +51,7 @@
       <div class="graph-controls">
         <button id="resetView" class="control-btn">Reset View</button>
         <button id="exportGraph" class="control-btn">Export Data</button>
+        <button id="analyticsBtn" class="control-btn">Show Analytics</button>
       </div>
     </div>
     
@@ -66,6 +67,23 @@
         <div id="detailsContent" class="details-content">
           <!-- Article details will be populated here -->
         </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Analytics Section -->
+  <section id="analyticsSection" class="analytics-section hidden">
+    <div class="analytics-header">
+      <h2>Graph Analytics</h2>
+      <button id="closeAnalyticsBtn" class="close-btn">&times;</button>
+    </div>
+    <div class="analytics-content">
+      <div class="analytics-loading" id="analyticsLoading">
+        <div class="spinner"></div>
+        <p>Generating analytics...</p>
+      </div>
+      <div class="analytics-data" id="analyticsData" style="display: none;">
+        <!-- Analytics content will be populated here -->
       </div>
     </div>
   </section>

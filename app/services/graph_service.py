@@ -5,6 +5,7 @@ from typing import Dict, List, Set, Optional
 from datetime import datetime
 import logging
 from .pubmed_service import PubMedService
+from .analytics_service import GraphAnalyticsService
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,7 @@ class GraphService:
     
     def __init__(self):
         self.pubmed_service = PubMedService()
+        self.analytics_service = GraphAnalyticsService()
         self.graphs = {}  # Store multiple graphs by ID
         self.MAX_ARTICLES = 50  # Limit to prevent overwhelming the API
         
@@ -204,4 +206,38 @@ class GraphService:
                 'created_at': graph.graph['created_at']
             }
             for graph_id, graph in self.graphs.items()
-        ] 
+        ]
+    
+    def get_graph_analytics(self, graph_id: str) -> Optional[Dict]:
+        """Get comprehensive analytics for a graph"""
+        if graph_id not in self.graphs:
+            return None
+        
+        graph = self.graphs[graph_id]
+        
+        # Only analyze completed graphs
+        if graph.graph.get('status') not in ['completed', 'completed_with_limit']:
+            return {'error': 'Graph analysis only available for completed graphs'}
+        
+        try:
+            print(f"\n📊 Generating analytics for graph {graph_id}...")
+            analytics = self.analytics_service.analyze_graph(graph)
+            print(f"✅ Analytics generated successfully")
+            return analytics
+        except Exception as e:
+            logger.error(f"Error generating analytics for graph {graph_id}: {e}")
+            return {'error': str(e)}
+    
+    def get_node_analytics(self, graph_id: str, node_id: str) -> Optional[Dict]:
+        """Get detailed analytics for a specific node in a graph"""
+        if graph_id not in self.graphs:
+            return None
+        
+        graph = self.graphs[graph_id]
+        
+        try:
+            analytics = self.analytics_service.get_node_analytics(graph, node_id)
+            return analytics
+        except Exception as e:
+            logger.error(f"Error getting node analytics for {node_id} in graph {graph_id}: {e}")
+            return {'error': str(e)}

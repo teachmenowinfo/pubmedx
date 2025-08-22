@@ -19,6 +19,10 @@ class GraphResponse(BaseModel):
     status: str
     message: str
 
+class AnalyticsResponse(BaseModel):
+    graph_id: str
+    analytics: dict
+
 @router.post("/create", response_model=GraphResponse)
 async def create_graph(request: CreateGraphRequest, background_tasks: BackgroundTasks):
     """Create a new knowledge graph from a seed PMID"""
@@ -73,4 +77,24 @@ async def delete_graph(graph_id: str):
         del graph_service.graphs[graph_id]
         return {"message": f"Graph {graph_id} deleted successfully"}
     else:
-        raise HTTPException(status_code=404, detail="Graph not found") 
+        raise HTTPException(status_code=404, detail="Graph not found")
+
+@router.get("/{graph_id}/analytics")
+async def get_graph_analytics(graph_id: str):
+    """Get comprehensive analytics for a graph"""
+    analytics = graph_service.get_graph_analytics(graph_id)
+    if not analytics:
+        raise HTTPException(status_code=404, detail="Graph not found or not completed")
+    return AnalyticsResponse(graph_id=graph_id, analytics=analytics)
+
+@router.get("/{graph_id}/nodes/{node_id}/analytics")
+async def get_node_analytics(graph_id: str, node_id: str):
+    """Get detailed analytics for a specific node in a graph"""
+    analytics = graph_service.get_node_analytics(graph_id, node_id)
+    if not analytics:
+        raise HTTPException(status_code=404, detail="Node or graph not found")
+    return {
+        "graph_id": graph_id,
+        "node_id": node_id,
+        "analytics": analytics
+    } 
